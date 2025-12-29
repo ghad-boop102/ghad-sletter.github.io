@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Old+London&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  height:100vh;overflow:hidden;
+  display:flex;justify-content:center;align-items:center;
+  font-family:'Old London', serif;
+}
+
+/* ===== FLUID BACKGROUND ===== */ 
+body::before{ 
+  content:""; 
+  position:fixed;inset:0; 
+  background:linear-gradient(-45deg,#ff6fae,#ffd1e8,#ff9fcb,#ffe4f2,#ffc1dd); 
+  background-size:600% 600%; 
+  animation:fluid 22s ease-in-out infinite alternate; 
+  filter:blur(10px); 
+  z-index:-2; 
+} 
+body::after{ 
+  content:""; 
+  position:fixed;inset:0; 
+  background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.35),transparent 45%), radial-gradient(circle at 70% 70%,rgba(255,255,255,.25),transparent 50%); 
+  animation:drift 25s linear infinite; 
+  z-index:-1; 
+} 
+@keyframes fluid{ 
+  0%{background-position:0% 50%} 
+  25%{background-position:50% 100%} 
+  50%{background-position:100% 50%} 
+  75%{background-position:50% 0%} 
+  100%{background-position:0% 50%} 
+} 
+@keyframes drift{ from{transform:translate(0,0)} to{transform:translate(-80px,-120px)} }
+
+/* ===== FLOATING PARTICLES ===== */ 
+.particle{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.6);animation:float linear infinite;pointer-events:none} 
+@keyframes float{from{transform:translateY(120vh) scale(1);opacity:0}30%{opacity:1}to{transform:translateY(-20vh) scale(.4);opacity:0}}
+
+/* ===== ENVELOPE ===== */ 
+.wrapper{perspective:1200px} 
+.intro{text-align:center;cursor:pointer} 
+.envelope{ 
+  width:300px;height:190px; 
+  background:linear-gradient(135deg,#ff7bbd,#ffb6d9); 
+  border-radius:10px; 
+  position:relative;overflow:hidden; 
+  box-shadow:0 25px 60px rgba(0,0,0,.35); 
+  animation:pulse 1.8s infinite; 
+} 
+.envelope::before{ 
+  content:""; 
+  position:absolute;top:0;left:0; 
+  border-left:150px solid transparent; 
+  border-right:150px solid transparent; 
+  border-top:95px solid #ff5fa2; 
+  transform-origin:top; 
+  transition:transform 1.2s ease; 
+} 
+.envelope::after{ 
+  content:""; 
+  position:absolute;inset:0; 
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.25),transparent); 
+  animation:shine 3s infinite; 
+} 
+.envelope.open{animation:none} 
+.envelope.open::before{transform:rotateX(180deg)} 
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(.95)}} 
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}} 
+.click{margin-top:22px;color:#a01444;font-size:18px}
+
+/* ===== LETTER VIEW ===== */ 
+.letter-view{position:fixed;inset:0;display:none;justify-content:center;align-items:center} 
+.letter{ 
+  width:min(500px,92vw); 
+  max-height:80vh; 
+  overflow-y:auto; 
+  padding:32px; 
+  background:repeating-linear-gradient(0deg,#fff0f7,#fff0f7 24px,#ffd6ea 25px); 
+  border-radius:20px; 
+  color:#8b0d3a; 
+  line-height:1.9;
+  letter-spacing:.2px; 
+  box-shadow:0 35px 80px rgba(0,0,0,.45); 
+  opacity:0;transform:scale(.85); 
+  transition:1.2s ease; 
+  font-family:'Old London', serif;
+  font-size:16px;
+  white-space:pre-wrap;
+}
+.letter.show{
+  opacity:1;
+  transform:scale(1);
+}
+.letter h1{
+  text-align:center;
+  margin-top:0;
+  margin-bottom:20px;
+}
+.close{position:absolute;top:16px;right:20px;font-size:22px;cursor:pointer}
+
+/* ===== MUSIC BUTTON ===== */ 
+.music-btn{ 
+  position:fixed;bottom:20px;right:20px; 
+  background:#ff6fae;color:#fff; 
+  border:none;border-radius:50px; 
+  padding:10px 16px;cursor:pointer; 
+  box-shadow:0 10px 25px rgba(0,0,0,.3);
+} 
+
+/* ===== NOW PLAYING ===== */
+#nowPlaying{
+  position:fixed;
+  bottom:100px;
+  right:20px;
+  color:#fff;
+  font-size:14px;
+  font-family:'Old London', serif;
+  text-align:center;
+}
+
+/* ===== MUSIC LABEL ===== */
+#musicLabel{
+  position:fixed;
+  bottom:140px;
+  right:20px;
+  background: rgba(0,0,0,0.5);
+  color:#fff;
+  font-family:'Old London', serif;
+  font-size:14px;
+  text-align:center;
+  padding:6px 12px;
+  border-radius:12px;
+  max-width:180px;
+}
+</style>
+</head>
+<body>
+
+<div id="musicLabel">listen to some music while reading :))</div>
+<button class="music-btn" onclick="toggleMusic()">♫ Music</button> 
+<div id="nowPlaying">Now Playing: —</div>
+<audio id="player"></audio>
+
+<script>
+// PARTICLES
+for(let i=0;i<18;i++){
+  const p=document.createElement('div');
+  p.className='particle';
+  p.style.left=Math.random()*100+'vw';
+  p.style.animationDuration=10+Math.random()*12+'s';
+  document.body.appendChild(p);
+}
+
+// MUSIC RANDOMIZER
+const tracks=[
+  'A Thousand Years.mp3',
+  'About You.mp3',
+  'Always.mp3',
+  'Apocalypse.mp3',
+  'Blessed.mp3',
+  'Here With Me.mp3',
+  'My Love Mine All Mine.mp3',
+  'Nobody Else.mp3',
+  'not a lot, just forever.mp3',
+  'Nothing.mp3',
+  'Oh Love.mp3',
+  'Rearrange My World.mp3',
+  'Ripples.mp3',
+  'Sleep Well.mp3',
+  'someday ill get it.mp3',
+  'Your Song.mp3'
+];
+
+let fadeInterval = null;
+const player = document.getElementById('player');
+const nowPlaying = document.getElementById('nowPlaying');
+let playing = false;
+
+function playRandom(){
+  const pick = tracks[Math.floor(Math.random()*tracks.length)];
+  player.src = pick;
+  nowPlaying.textContent = 'Now Playing: ' + pick.replace('.mp3','');
+  player.volume = 0;
+  player.play();
+  fadeIn();
+}
+
+player.onended = playRandom;
+
+function toggleMusic(){
+  if(!playing){
+    playRandom();
+    playing = true;
+  } else {
+    fadeOut();
+  }
+}
+
+function fadeIn(){
+  clearInterval(fadeInterval);
+  fadeInterval = setInterval(()=>{
+    if(player.volume < 0.95){ player.volume += 0.05; }
+    else clearInterval(fadeInterval);
+  }, 200);
+}
+
+function fadeOut(){
+  clearInterval(fadeInterval);
+  fadeInterval = setInterval(()=>{
+    if(player.volume > 0.05){ player.volume -= 0.05; }
+    else {
+      player.pause();
+      playing = false;
+      clearInterval(fadeInterval);
+    }
+  }, 200);
+}
+</script>
+
+<div class="wrapper">
+  <div class="intro" id="intro" onclick="openLetter()">
+    <div class="envelope" id="env"></div>
+    <div class="click">Click the envelope</div>
+  </div>
+</div>
+
+<div class="letter-view" id="view">
+  <div class="letter" id="letter">
+    <div class="close" onclick="closeLetter()">✕</div>
+
+<h1>Happy New Year Devine</h1>
+<p>Hello Devine, this is so random pero sana you spare some time to read this. I just want you to know na gusto pa rin kita. Hindi ko alam kung bakit ko naisipang gawin to, pero ito lang yung sa tingin ko na way para maka usad ako sayo. Wala kana sigurong pake sakin and hindi mo na rin ako naiisip. Baka nga meron ka na ring bagong gusto. Pero ako hindi haha. Ever since tumigil na tayo mag usap, walang araw na hindi ka umalis sa isip ko nakakahiya tong aminin sa totoo lang HAHAHA kasi ba naman wala pa tayong kalahating taon magka kilala nasira na agad friendship natin, napunta pa sa ganito.</p>
+
+<p>Anyways sabihin ko na lahat lahat ng nararamdaman ko sayo dito kasi ito na ata last chance ko, soo ito na nga nag start ako magka gusto ako sayo nung mga october 15 dahil dun sa sinabi sakin ni rhiona na ikaw daw may hawak ng phone ko hanggang mag uwian, na aappreciate ko kasi kahit yung mga maliliit na bagay. Sobrang babaw diba? mas mababaw pa ata yan kesa sa pag turo ko sayo sa math HAHAHA.</p>
+
+<p>Tapos simula non sa araw araw nating pag interact si isat isa nagkakaron na ako na feelings sayo. Nung una nagustuhan kita kasi maganda ka. Di mo siguro nakikita yon pero sobrang ganda mo talaga, nung una nga kitang nakita diko naisip na makakausap manlang kita.</p>
+
+<p>Pero pa tagal ng pa tagal nawawalan na ako ng pake kung maganda ka, mas nagustuhan ko na yung ugali mo tsaka kung pano mo ako tratuhin. Kahit bilang kaibigan palang ikaw lang trumato sakin ng ganon lahat ng ginawa mo sakin unang beses ko lang yon naranasan lalo na galing pa sa babaeng katulad mo.</p>
+
+<p>Tapos non may na trigger nanaman sakin para may magustuhan akong bago sayo. Nangyare yon nung may pt kayo sa oc na punta sa c6 HAHAHA that time grabe yung hulog ko sayo non kasi lagi tayo magka lapit non tapos nung mag papa picture tayo doon sa may tren, hinila mo ako palapit sayo para mag tabi sayo.</p>
+
+<p>Yun yung time na na realize ko na gusto ko na rin yung presence mo pero hindi lang yon pati na rin kung pano mo ako tignan, pano ka tumawa sa mga sinasabi ko, kung pano ka ngumiti pag ako kausap mo, at kung pano ka mag react pag na mamangha ka, nalilito or natatawa ka ng sobra, basta simula ng na hulog ako sayo lahat na ng ginagawa mo gustong gusto ko.</p>
+
+<p>Akala ko hulog na hulog na ako sayo non that time kasi lahat na talaga na gustuhan ko sayo eh pero mali pala ako, may mas lalalim pa pala yung nararamdaman ko sayo. And nangyare naman yon nung maaga tayong pumasok alam kong na sabi ko na to sa confession ko, pero dito ko kasi talaga na realize na gustong gusto na kita to the point na sumasagi na sa isip ko na subukan kitang ipursue kasi sobrang gaan mo kasama, feeling ko kaya kong sabihin sayo lahat ng masasamang nangyare sa buhay ko kasi alam ko na hindi mo yun ipagsasabi.</p>
+
+<p>Gusto talaga kita Devine and if totoo man ang himala at may nararamdaman ka pa rin sakin, we can make it work pero kung gusto mo lang. Wala akong pake kahit sabihin pa nila na mali magka gusto sa hindi iglesia, kahit maalis pa ako sa religion ko, kung makaka sama naman kita masaya na ako. I know you have avoidant attachment and you're scared of intimacy because you might get hurt again, if that's the case we can take it slow we'll move at your pace I don't care how long it takes if it means I get to be with you in the end.</p>
+
+<p>But all that is just a "what if you still have feelings for me". In reality there will be no "us" and I can't accept that, but I should, no i must. And the reason is that your eyes don't say the things they used to, back then your eyes always greet me before your mouth could, but now when we accidentally made eye contacts all i can read in your eye is "who are you?" it's like when you see me all you see is a stranger, or sometimes i feel like you're so irritated when I'm around, it might be just me but that's what i feel when you're around. tbh i would be lying if i say i don't hope even the slightest that there's still a chance of us getting back our closeness. i miss it all if I'm being real.</p>
+
+<p>Every day when i no longer have any distractions i find my self stalking you in every social media (sounds creepy i know) and rereading our conversations in all of the apps we used to talk sometimes i even get the urge to send you a message or a reel but i know you won't reply anymore. Medyo nakakalungkot kasi dati nakakausap kita ng sobrang casual at araw araw pa, pero ngayon hanggang tingin nalang ako sayo hahahaha. So after this break I'm gonna try to not bother you any more further, and I'll try to don't look at you when you're around cause i think i make you so uncomfortable when i do. I hope you achieve w high so you won't cry about your parents not being proud of you. But don't foget that no matter what happens i will always be proud of you and if all of it become so heavy and you think the world is against you, you can always talk to me I will always be here.</p>
+
+  </div>
+</div>
+
+<script>
+const env=document.getElementById('env');
+const intro=document.getElementById('intro');
+const view=document.getElementById('view');
+const letter=document.getElementById('letter');
+
+function openLetter(){
+  env.classList.add('open');
+  intro.style.opacity=0;
+  if(!playing){ playRandom(); playing = true; }
+  setTimeout(()=>{
+    intro.style.display='none';
+    view.style.display='flex';
+    setTimeout(()=>letter.classList.add('show'),200);
+  },1000);
+}
+
+function closeLetter(){
+  letter.classList.remove('show');
+  setTimeout(()=>{
+    view.style.display='none';
+    intro.style.display='block';
+    intro.style.opacity=1;
+    env.classList.remove('open');
+  },700);
+}
+</script>
+
+</body>
+</html>
