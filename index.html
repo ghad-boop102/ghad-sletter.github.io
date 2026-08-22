@@ -193,13 +193,14 @@ function playRandom(){
   fadeIn();
 }
 
-player.onended = playRandom;
+player.addEventListener('ended', function() {
+  if (playing) {
+    playRandom();
+  }
+});
 
 function toggleMusic(){
-  if(!playing){
-    playRandom();
-    playing = true;
-  } else {
+  if(!playing){ playRandom(); } else {
     fadeOut();
   }
 }
